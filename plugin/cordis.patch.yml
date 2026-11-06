@@ -1,0 +1,6 @@
+# dsh-memory-system 的 bundle patch
+# 装法：在 profile 的 package.json 里加 "dsh-memory-system": "link:<这个目录>"
+# 然后重启 DSH
+- insert:
+    - id: memory-system
+      name: dsh-memory-system
