@@ -1,0 +1,49 @@
+{
+  "$schema": "./config.schema.json",
+  "_comment": "复制成 config.json 后改这里。所有路径默认在用户主目录下，换机器不用改代码。",
+
+  "dataDir": {
+    "engine": "~/.dsh-memory/engine",
+    "archive": "~/.dsh-memory/archive"
+  },
+
+  "embedding": {
+    "_comment": "type: local = 本地 bge-m3 服务；openai = 任意 OpenAI 兼容的 /v1/embeddings 接口",
+    "type": "local",
+    "baseUrl": "http://127.0.0.1:8090",
+    "model": "BAAI/bge-m3",
+    "apiKey": ""
+  },
+
+  "llm": {
+    "_comment": "提炼和验证用小模型就够。baseUrl 支持任意 OpenAI 兼容接口。",
+    "baseUrl": "https://api.deepseek.com/v1",
+    "model": "deepseek-flash",
+    "apiKey": "",
+    "batchSize": 8
+  },
+
+  "recall": {
+    "_comment": "每轮注入多少。预算制：条数少而准，比多而杂强。",
+    "maxItems": 4,
+    "minCue": 0.35,
+    "minConfidence": 0.4,
+    "maxChars": 800
+  },
+
+  "decay": {
+    "_comment": "衰减参数。episode 断崖（3天沉底），lesson/skill 慢衰减，principle 几乎不掉。",
+    "episodeHalfLifeDays": 3,
+    "defaultHalfLifeDays": 30,
+    "principleHalfLifeDays": 36500
+  },
+
+  "maintenance": {
+    "_comment": "每日维护：提炼、验证、去重、归档。",
+    "extractEveryMinutes": 1440,
+    "verifyBatch": 40,
+    "dedupeCosineThreshold": 0.8,
+    "coldArchiveD": 0.06,
+    "coldStoreD": 0.35
+  }
+}
