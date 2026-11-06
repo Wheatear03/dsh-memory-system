@@ -11,6 +11,7 @@ import {
   grams, retrievability, rrfFuse, blobToVec,
 } from './scoring.mjs'
 import { listCandidates, makeResolver, logRecall } from './storage.mjs'
+import { degreeMap } from './graph.mjs'
 
 /** 调 embedding 服务（本地 bge-m3 或任意 OpenAI 兼容接口） */
 export async function embed(text, cfg = loadConfig()) {
@@ -72,6 +73,10 @@ export async function recall(db, query, opts = {}) {
     }
   })
 
+  // 图中心度：连得越多说明它在网里，给一点加成（不是主因，只是"相关但不相似"的补偿）
+  const degrees = degreeMap(db)
+  const maxDeg = Math.max(1, ...degrees.values())
+
   // 2) RRF 融合两路名次（尺度无关，比加权平均稳）
   const fused = rrfFuse(withCue, !!qvec)
 
@@ -90,7 +95,8 @@ export async function recall(db, query, opts = {}) {
       const w = x.m.source === 'manual' ? 1.0
         : x.m.source === 'llm_extracted' ? 0.96
           : 0.86
-      return { ...x, R: x.R * w }
+      const graph = 1 + 0.15 * Math.min(1, (degrees.get(x.m.id) || 0) / maxDeg)
+      return { ...x, R: x.R * w * graph, graph }
     })
     .sort((a, b) => b.R - a.R)
 

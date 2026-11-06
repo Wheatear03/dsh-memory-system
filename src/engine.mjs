@@ -12,6 +12,7 @@
 import { loadConfig } from './config.mjs'
 import { openDb, insertMem, findById } from './storage.mjs'
 import { recall, formatForPrompt } from './recall.mjs'
+import { buildEdges, neighbors, spread } from './graph.mjs'
 
 const cfg = loadConfig()
 const [cmd, ...args] = process.argv.slice(2)
@@ -82,6 +83,29 @@ if (cmd === 'init') {
   if (args.includes('--json')) console.log(JSON.stringify(out, null, 1))
   else process.stdout.write(formatForPrompt(out.hits, cfg) + '\n')
 
+} else if (cmd === 'graph') {
+  // 建边：同一天 / 同一轮 / 语义相似
+  const db = openDb(cfg)
+  const out = buildEdges(db, { cfg, skipSimilar: args.includes('--fast') })
+  db.close()
+  console.log(JSON.stringify(out, null, 1))
+
+} else if (cmd === 'neighbors') {
+  const id = positional()[0]
+  if (!id) { console.error('用法: engine.mjs neighbors <id>'); process.exit(1) }
+  const db = openDb(cfg)
+  const out = neighbors(db, id, 20)
+  db.close()
+  console.log(JSON.stringify({ ok: true, id, neighbors: out }, null, 1))
+
+} else if (cmd === 'spread') {
+  const ids = positional()
+  if (!ids.length) { console.error('用法: engine.mjs spread <id1> [id2...]'); process.exit(1) }
+  const db = openDb(cfg)
+  const out = spread(db, ids, { limit: 10 })
+  db.close()
+  console.log(JSON.stringify({ ok: true, seeds: ids, spread: out }, null, 1))
+
 } else if (cmd === 'forget') {
   const id = positional()[0]
   if (!id) { console.error('用法: engine.mjs forget <id>'); process.exit(1) }
@@ -102,6 +126,9 @@ if (cmd === 'init') {
       health: '自检',
       remember: 'remember "内容" [--kind fact] [--owner user]',
       recall: 'recall "查询" [--mode work|review] [--limit N] [--json]',
+      graph: '建边（同一天 / 同一轮 / 语义相似）',
+      neighbors: 'neighbors <id>（看一条记忆连着谁）',
+      spread: 'spread <id...>（沿边扩散找相关）',
       forget: 'forget <id>（归档，不删除）',
     },
   }, null, 1))
