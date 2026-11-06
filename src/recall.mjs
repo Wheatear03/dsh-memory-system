@@ -95,15 +95,23 @@ export async function recall(db, query, opts = {}) {
       const w = x.m.source === 'manual' ? 1.0
         : x.m.source === 'llm_extracted' ? 0.96
           : 0.86
-      const graph = 1 + 0.15 * Math.min(1, (degrees.get(x.m.id) || 0) / maxDeg)
-      return { ...x, R: x.R * w * graph, graph }
+      return { ...x, R: x.R * w }
     })
     .sort((a, b) => b.R - a.R)
+
+  // 3.5) 图加成：只在「跟头名差不到 4%」时用来打破平手。
+  // 差得多的说明本来就不相关，连多少边都不该把它救回来（否则旧内容会盖掉新答案）。
+  const maxR0 = Math.max(0.0001, ...scored.map((y) => y.R))
+  const graphRanked = scored.map((x) => {
+    if (x.R < maxR0 * 0.96) return x
+    const g = 1 + 0.15 * Math.min(1, (degrees.get(x.m.id) || 0) / maxDeg)
+    return { ...x, R: x.R * g, graph: g }
+  }).sort((a, b) => b.R - a.R)
 
   // 4) 墓碑解析：命中旧版本时顺着指针找到现任
   const resolve = makeResolver(db)
   const best = new Map()
-  for (const x of scored) {
+  for (const x of graphRanked) {
     if (x.m.status === 'superseded' || x.m.status === 'fused') continue  // 干活模式不要旧说法
     const targetId = resolve(x.m.id)
     const target = targetId === x.m.id ? x.m : db.prepare('select * from mem where id = ?').get(targetId)
