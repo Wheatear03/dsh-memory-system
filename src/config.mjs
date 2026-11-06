@@ -47,6 +47,24 @@ const DEFAULTS = {
     defaultHalfLifeDays: 30,
     principleHalfLifeDays: 36500,
   },
+  scoring: {
+    // 衰减速率
+    lambda0D: 1 / 30,     // 细节基准衰减（30 天掉到 e^-1）
+    lambda0S: 1 / 300,    // 意义基准衰减（慢十倍）
+    lambda0E: 1 / 10,     // 情绪残留衰减
+    // 互相修正
+    alpha: 0.8,           // 情绪强 → 记得牢（抑制遗忘）
+    beta: 0.6,            // 反复想起 → 记得牢
+    gamma: 0.5,           // 跟别的东西搅混 → 忘得快
+    // 检索权重
+    w1: 1.5,              // 意义
+    w2: 0.8,              // 情绪
+    w3: 2.0,              // 线索命中
+    w4: 1.0,              // 时近性
+    w5: 0.6,              // 回忆次数
+    w6: 1.2,              // 干扰（减分）
+    threshold: 0.35,      // R 过这条线才算「想起来了」
+  },
   maintenance: {
     extractEveryMinutes: 1440,
     verifyBatch: 40,
